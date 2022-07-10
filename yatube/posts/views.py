@@ -106,17 +106,19 @@ def post_edit(request, post_id):
         {'form': form, 'post': post, 'is_edit': True}
     )
 
+
 @login_required
 def add_comment(request, post_id):
     """Функция комментирования поста авторизованным пользователем."""
-    post = get_object_or_404(Post, id=post_id) 
+    post = get_object_or_404(Post, id=post_id)
     form = CommentForm(request.POST or None)
     if form.is_valid():
         comment = form.save(commit=False)
         comment.author = request.user
         comment.post = post
         comment.save()
-    return redirect('posts:post_detail', post_id=post_id) 
+    return redirect('posts:post_detail', post_id=post_id)
+
 
 @login_required
 def follow_index(request):
@@ -131,6 +133,7 @@ def follow_index(request):
         'page_obj': page_obj,
     }
     return render(request, template_name, context)
+
 
 @login_required
 def profile_follow(request, username):

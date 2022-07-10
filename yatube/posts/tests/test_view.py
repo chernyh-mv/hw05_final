@@ -145,7 +145,7 @@ class PostPagesTests(TestCase):
         first_comment = self.post.comments.all()[0]
         self.assertEqual(response.context.get('post'), self.post)
         check_comment(self, first_comment, form_data)
-        
+
     def test_create_post_show_correct_context(self):
         """Проверяем Context на странице create_post."""
         response = self.authorized_client.get(

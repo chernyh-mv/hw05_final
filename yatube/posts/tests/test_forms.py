@@ -52,8 +52,10 @@ class PostFormTests(TestCase):
         cls.form = PostForm()
         cls.create_reverse = reverse('posts:post_create')
         cls.post_edit_reverse = reverse('posts:post_edit', args=[cls.post.pk])
-        cls.post_comment_reverse = reverse('posts:add_comment', args=[cls.post.pk])
-        cls.post_detail_reverse = reverse('posts:post_detail', args=[cls.post.pk])
+        cls.post_comment_reverse = reverse(
+            'posts:add_comment', args=[cls.post.pk])
+        cls.post_detail_reverse = reverse(
+            'posts:post_detail', args=[cls.post.pk])
 
     @classmethod
     def tearDownClass(cls):
