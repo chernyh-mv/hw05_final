@@ -141,7 +141,7 @@ def profile_follow(request, username):
     if request.user != author:
         Follow.objects.get_or_create(user=request.user, author=author)
     else:
-        return redirect('index')
+        return redirect(reverse('posts:index'))
     return redirect('posts:profile', username=username)
 
 
