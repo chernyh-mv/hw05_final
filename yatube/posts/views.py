@@ -124,7 +124,7 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Старница с постами авторов, на которых подписан текущий пользователь."""
     template_name = 'posts/follow.html'
-    authors = Follow.objects.filter(user=request.user).values('author')
+    author = Follow.objects.filter(user=request.user).values('author')
     post_list = Post.objects.filter(author__following__user=request.user).all()
     page_obj = get_page(post_list, request)
     context = {
@@ -142,8 +142,8 @@ def profile_follow(request, username):
     if request.user != author:
         Follow.objects.get_or_create(user=request.user, author=author)
     else:
-        return redirect(reverse('index'))
-    return redirect("posts:profile", username=username)
+        return redirect('index')
+    return redirect('posts:profile', username=username)
 
 
 @login_required
@@ -152,4 +152,4 @@ def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
     if request.user != author:
         Follow.objects.filter(user=request.user, author=author).delete()
-    return redirect("posts:profile", username=username)
+    return redirect('posts:profile', username=username)
