@@ -124,7 +124,6 @@ def add_comment(request, post_id):
 def follow_index(request):
     """Старница с постами авторов, на которых подписан текущий пользователь."""
     template_name = 'posts/follow.html'
-    author = Follow.objects.filter(user=request.user).values('author')
     post_list = Post.objects.filter(author__following__user=request.user).all()
     page_obj = get_page(post_list, request)
     context = {
