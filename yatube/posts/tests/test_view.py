@@ -76,6 +76,7 @@ class PostPagesTests(TestCase):
         cls.post_create = (
             'posts:post_create', 'posts/create_post.html', None
         )
+        cls.index_reverse = reverse(cls.index[0])
         cls.page_with_paginator = [
             cls.index,
             cls.group_list,
@@ -184,13 +185,13 @@ class PostPagesTests(TestCase):
             author=self.user,
             text='Пост для проверки работы кеша',
         )
-        response = self.guest_client.get(reverse(self.index[0]))
+        response = self.guest_client.get(self.index_reverse)
         cache_with_post = response.content
         post.delete()
-        response = self.guest_client.get(reverse(self.index[0]))
+        response = self.guest_client.get(self.index_reverse)
         self.assertEqual(response.content, cache_with_post)
         cache.clear()
-        response = self.guest_client.get(reverse(self.index[0]))
+        response = self.guest_client.get(self.index_reverse)
         self.assertNotEqual(response.content, cache_with_post)
 
 
@@ -255,19 +256,26 @@ class FollowTests(TestCase):
             user=cls.user_1,
             author=cls.user_2
         )
+        cls.profile_follow = ('posts:profile_follow', [cls.user_2.username])
+        cls.profile_unfollow = (
+            'posts:profile_unfollow', [cls.user_2.username])
+        cls.index_follow = ('posts:follow_index', None)
 
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user_1)
 
+    def make_reverse(self, expected_page: tuple):
+        """Функция для формирования reverse."""
+        page = expected_page[0]
+        test_args = expected_page[1]
+        return reverse(page, args=test_args)
+
     def test_authorized_user_can_follow_other_users(self):
         """Авторизованный пользователь может подписаться на автора."""
         follow_count = Follow.objects.count()
         self.assertFalse(self.follow.exists())
-        self.authorized_client.get(reverse(
-            'posts:profile_follow',
-            args=[self.user_2.username])
-        )
+        self.authorized_client.get(self.make_reverse(self.profile_follow))
         self.assertEqual(Follow.objects.count(), follow_count + 1)
         self.assertTrue(self.follow.exists())
 
@@ -275,10 +283,7 @@ class FollowTests(TestCase):
         """Авторизованный пользователь может отписаться от автора."""
         self.follow
         follow_count = Follow.objects.count()
-        self.authorized_client.get(reverse(
-            'posts:profile_unfollow',
-            args=[self.user_2.username])
-        )
+        self.authorized_client.get(self.make_reverse(self.profile_unfollow))
         self.assertEqual(Follow.objects.count(), follow_count)
         self.assertFalse(self.follow.exists())
 
@@ -287,13 +292,15 @@ class FollowTests(TestCase):
         Follow.objects.create(
             user=self.user_1,
             author=self.user_2)
-        response = self.authorized_client.get(reverse('posts:follow_index'))
+        response = self.authorized_client.get(
+            self.make_reverse(self.index_follow))
         follow_context = response.context['page_obj']
         self.assertIn(self.post, follow_context)
 
     def test_new_post_for_not_followers(self):
         """Новая запись пользователя не появляется в ленте
         у тех, кто не подписан."""
-        response = self.authorized_client.get(reverse('posts:follow_index'))
+        response = self.authorized_client.get(
+            self.make_reverse(self.index_follow))
         follow_context = response.context['page_obj']
         self.assertNotIn(self.post, follow_context)

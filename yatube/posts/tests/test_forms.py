@@ -50,12 +50,11 @@ class PostFormTests(TestCase):
             group=cls.group,
         )
         cls.form = PostForm()
-        cls.create_reverse = reverse('posts:post_create')
-        cls.post_edit_reverse = reverse('posts:post_edit', args=[cls.post.pk])
-        cls.post_comment_reverse = reverse(
-            'posts:add_comment', args=[cls.post.pk])
-        cls.post_detail_reverse = reverse(
-            'posts:post_detail', args=[cls.post.pk])
+        cls.create = ('posts:post_create', None)
+        cls.post_edit = ('posts:post_edit', [cls.post.pk])
+        cls.post_comment = ('posts:add_comment', [cls.post.pk])
+        cls.post_detail = ('posts:post_detail', [cls.post.pk])
+        cls.post_profile = ('posts:profile', [cls.user])
 
     @classmethod
     def tearDownClass(cls):
@@ -67,6 +66,12 @@ class PostFormTests(TestCase):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
+    def make_reverse(self, expected_page: tuple):
+        """Функция для формирования reverse."""
+        page = expected_page[0]
+        test_args = expected_page[1]
+        return reverse(page, args=test_args)
+
     def test_create_post_valid(self):
         """Проверка, что валидная форма создает запись в Post."""
         posts_count = Post.objects.count()
@@ -77,10 +82,9 @@ class PostFormTests(TestCase):
             'image': self.post_image
         }
         response = self.authorized_client.post(
-            self.create_reverse, data=form_data, follow=True)
+            self.make_reverse(self.create), data=form_data, follow=True)
         first_object = response.context['page_obj'].object_list[0]
-        self.assertRedirects(
-            response, reverse('posts:profile', args=[self.user]))
+        self.assertRedirects(response, self.make_reverse(self.post_profile))
         self.assertEqual(Post.objects.count(), posts_count + 1)
         check_context(self, first_object)
 
@@ -91,11 +95,9 @@ class PostFormTests(TestCase):
             'text': 'Другой тестовый текст'
         }
         response = self.authorized_client.post(
-            self.post_edit_reverse, data=form_data, follow=True)
+            self.make_reverse(self.post_edit), data=form_data, follow=True)
         expected_object = response.context['post']
-        self.assertRedirects(response, reverse(
-            ('posts:post_detail'), args=[self.post.id])
-        )
+        self.assertRedirects(response, self.make_reverse(self.post_detail))
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertEqual(expected_object.text, form_data['text'])
 
@@ -108,13 +110,13 @@ class PostFormTests(TestCase):
             'text': ''
         }
         reverse_page = [
-            self.post_edit_reverse,
-            self.create_reverse,
+            self.post_edit,
+            self.create,
         ]
         for page in reverse_page:
             with self.subTest(page=page):
                 response = self.authorized_client.post(
-                    page, data=form_data, follow=True)
+                    self.make_reverse(page), data=form_data, follow=True)
                 self.assertEqual(Post.objects.count(), posts_count)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
@@ -125,8 +127,8 @@ class PostFormTests(TestCase):
             'text': 'Тестовый комментарий',
         }
         response = self.authorized_client.post(
-            self.post_comment_reverse, data=form_data, follow=True)
+            self.make_reverse(self.post_comment), data=form_data, follow=True)
         first_comment = self.post.comments.all()[0]
-        self.assertRedirects(response, self.post_detail_reverse)
+        self.assertRedirects(response, self.make_reverse(self.post_detail))
         self.assertEqual(Comment.objects.count(), comments_count + 1)
         check_comment(self, first_comment, form_data)
