@@ -128,7 +128,6 @@ def follow_index(request):
     post_list = Post.objects.filter(author__following__user=request.user).all()
     page_obj = get_page(post_list, request)
     context = {
-        'text': 'Последние обновления избранных авторов',
         'following': True,
         'page_obj': page_obj,
     }
@@ -141,8 +140,6 @@ def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
     if request.user != author:
         Follow.objects.get_or_create(user=request.user, author=author)
-    else:
-        return redirect(reverse('posts:index'))
     return redirect('posts:profile', username=username)
 
 
@@ -150,6 +147,5 @@ def profile_follow(request, username):
 def profile_unfollow(request, username):
     """Отписаться от автора."""
     author = get_object_or_404(User, username=username)
-    if request.user != author:
-        Follow.objects.filter(user=request.user, author=author).delete()
+    Follow.objects.filter(user=request.user, author=author).delete()
     return redirect('posts:profile', username=username)
